@@ -117,7 +117,7 @@ foreach ($f in $srcFiles) {
     # ---- ARM64 defines (KHONG dung _AMD64_/AMD64) ----
     # ntdef.h can _ARM64_ (WDK build system dat); compiler tu co _M_ARM64
     $r.Add('/D_ARM64_')
-    $r.Add('/D_WIN64')
+    $r.Add('/D_WIN64')   # MSVC tu dinh nghia _M_ARM64; /D_ARM64_ o tren
     $r.Add('/DPOOL_NX_OPTIN=1')
     $r.Add('/DKMDF_VERSION_MAJOR=1')
     $r.Add('/DKMDF_VERSION_MINOR=33')
