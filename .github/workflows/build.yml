@@ -8,25 +8,39 @@ on:
 jobs:
   build:
     runs-on: windows-2022
-    timeout-minutes: 45
+    timeout-minutes: 60
 
     steps:
       - name: Checkout
         uses: actions/checkout@v4
 
       # ------------------------------------------------------------------
-      # WDK: runner windows-2022 co san VS2022 + Windows SDK 10.0.26100,
-      # nhung KHONG co WDK. Cai bang winget.
+      # WDK: runner windows-2022 co VS2022 + SDK 10.0.26100 nhung KHONG co WDK.
+      # Thu nhieu cach: winget (co the fail) -> chocolatey -> download truc tiep
       # ------------------------------------------------------------------
-      - name: Install Windows Driver Kit
+      - name: Install WDK (winget)
         shell: pwsh
+        continue-on-error: true
         run: |
-          Write-Host "=== cai WDK ==="
+          Write-Host "=== [1] winget WDK ==="
           winget install --id Microsoft.WindowsWDK.10.0.26100 -e `
             --accept-package-agreements --accept-source-agreements --disable-interactivity
-          Write-Host "exit=$LASTEXITCODE"
+          Write-Host "winget exit=$LASTEXITCODE"
 
-      - name: Locate toolchain
+      - name: Install WDK (chocolatey)
+        if: always()
+        shell: pwsh
+        continue-on-error: true
+        run: |
+          $kits = "${env:ProgramFiles(x86)}\Windows Kits\10\Include"
+          $hasKm = Get-ChildItem $kits -Directory -ErrorAction SilentlyContinue |
+                   Where-Object { Test-Path (Join-Path $_.FullName 'km\wdm.h') }
+          if ($hasKm) { Write-Host "WDK da co, bo qua chocolatey"; exit 0 }
+          Write-Host "=== [2] chocolatey wdk ==="
+          choco install -y --no-progress windowsdriverkit10 || Write-Host "choco fail: $LASTEXITCODE"
+
+      - name: Locate toolchain (chan doan day du)
+        if: always()
         shell: pwsh
         run: |
           $vswhere = "${env:ProgramFiles(x86)}\Microsoft Visual Studio\Installer\vswhere.exe"
@@ -34,67 +48,90 @@ jobs:
           & $vswhere -all -products * -format value -property installationPath
           Write-Host "=== MSBuild ==="
           $mb = & $vswhere -latest -products * -requires Microsoft.Component.MSBuild -find MSBuild\**\Bin\MSBuild.exe
-          Write-Host "msbuild=$mb"
-          Write-Host "=== Windows Kits ==="
+          Write-Host "msbuild = $mb"
+          Write-Host "=== Windows Kits\Include ==="
           $kits = "${env:ProgramFiles(x86)}\Windows Kits\10"
-          Get-ChildItem "$kits\Include" -Directory | ForEach-Object { Write-Host ("  Include\" + $_.Name) }
-          Get-ChildItem "$kits\Lib" -Directory | ForEach-Object { Write-Host ("  Lib\" + $_.Name) }
-          Write-Host "=== WDK km headers ==="
-          foreach ($v in (Get-ChildItem "$kits\Include" -Directory | Where-Object Name -match '^10\.')) {
-            $wdm = Join-Path $v.FullName 'km\wdm.h'
-            Write-Host ("  {0} km\wdm.h = {1}" -f $v.Name, (Test-Path $wdm))
+          Get-ChildItem "$kits\Include" -Directory -ErrorAction SilentlyContinue | ForEach-Object {
+            $wdm = Join-Path $_.FullName 'km\wdm.h'
+            Write-Host ("  {0}  km\wdm.h={1}" -f $_.Name, (Test-Path $wdm))
           }
-          Write-Host "=== WDF libs arm64 ==="
+          Write-Host "=== Windows Kits\Lib ==="
+          Get-ChildItem "$kits\Lib" -Directory -ErrorAction SilentlyContinue | ForEach-Object { Write-Host ("  " + $_.Name) }
+          Write-Host "=== WDF kmdf arm64 versions ==="
           $wdf = Join-Path $kits 'Lib\wdf\kmdf\arm64'
           if (Test-Path $wdf) { Get-ChildItem $wdf -Directory | ForEach-Object { Write-Host ("  " + $_.Name) } }
+          else { Write-Host "  <khong co $wdf>" }
           Write-Host "=== cl.exe arm64 ==="
-          $msvc = Get-ChildItem "${env:ProgramFiles}\Microsoft Visual Studio\2022\*\VC\Tools\MSVC" -Directory -ErrorAction SilentlyContinue | Select-Object -First 1
-          if ($msvc) { Write-Host ("  " + (Test-Path (Join-Path $msvc.FullName 'bin\Hostx64\arm64\cl.exe'))) }
+          $msvcRoot = "${env:ProgramFiles}\Microsoft Visual Studio\2022"
+          $msvc = Get-ChildItem "$msvcRoot\*\VC\Tools\MSVC" -Directory -ErrorAction SilentlyContinue | Select-Object -First 1
+          if ($msvc) {
+            Write-Host ("  MSVC dir = " + $msvc.FullName)
+            Write-Host ("  Hostx64\arm64\cl.exe = " + (Test-Path (Join-Path $msvc.FullName 'bin\Hostx64\arm64\cl.exe')))
+            Write-Host ("  lib\arm64           = " + (Test-Path (Join-Path $msvc.FullName 'lib\arm64')))
+          } else { Write-Host "  <khong thay MSVC>" }
 
       # ------------------------------------------------------------------
-      # Build bang MSBuild + PlatformToolset WindowsKernelModeDriver10.0
-      # (cach chuan; MSBuild tu them moi lib runtime can thiet)
+      # BUILD CHINH: MSBuild + PlatformToolset WindowsKernelModeDriver10.0
+      # In TOAN BO log ra man hinh de doc truc tiep tren GitHub
       # ------------------------------------------------------------------
-      - name: Build driver (MSBuild, Release ARM64)
+      - name: Build driver (MSBuild)
+        id: msbuild
+        if: always()
         shell: pwsh
+        continue-on-error: true
         run: |
           $vswhere = "${env:ProgramFiles(x86)}\Microsoft Visual Studio\Installer\vswhere.exe"
-          $msbuild = & $vswhere -latest -products * -requires Microsoft.Component.MSBuild -find MSBuild\**\Bin\MSBuild.exe | Select-Object -First 1
-          Write-Host "msbuild = $msbuild"
-          if (-not $msbuild) { throw "Khong tim thay MSBuild" }
+          $mb = & $vswhere -latest -products * -requires Microsoft.Component.MSBuild -find MSBuild\**\Bin\MSBuild.exe | Select-Object -First 1
+          Write-Host "msbuild = $mb"
+          if (-not $mb) { Write-Host "!! khong co MSBuild"; exit 1 }
 
-          & $msbuild sec_ts_y79a.vcxproj /p:Configuration=Release /p:Platform=ARM64 /t:Build /v:normal /nologo
-          if ($LASTEXITCODE -ne 0) {
-            Write-Host "=== MSBuild that bai, thu liet ke target ==="
-            & $msbuild sec_ts_y79a.vcxproj /t:Build /p:Configuration=Release /p:Platform=ARM64 /v:diag 2>&1 |
-              Select-String -Pattern 'error|warning MSB|Toolset|PlatformToolsets' | Select-Object -First 40 |
-              ForEach-Object { Write-Host $_ }
-            exit 1
+          Write-Host ""
+          Write-Host "=== MSBUILD OUTPUT (day du) ==="
+          & $mb sec_ts_y79a.vcxproj /p:Configuration=Release /p:Platform=ARM64 /t:Build /v:normal /nologo 2>&1 |
+            ForEach-Object { Write-Host $_ }
+          $rc = $LASTEXITCODE
+          Write-Host "=== msbuild exit = $rc ==="
+          exit $rc
+
+      # ------------------------------------------------------------------
+      # Neu MSBuild fail: build thu cong, in day du log
+      # ------------------------------------------------------------------
+      - name: Fallback manual build (in day du log)
+        if: always()
+        shell: pwsh
+        continue-on-error: true
+        run: |
+          Write-Host "=== FALLBACK MANUAL BUILD ==="
+          powershell -ExecutionPolicy Bypass -File .\build_manual.ps1 2>&1 | ForEach-Object { Write-Host $_ }
+          if (Test-Path .\build_manual_log.txt) {
+            Write-Host ""
+            Write-Host "=== build_manual_log.txt (day du) ==="
+            Get-Content .\build_manual_log.txt | ForEach-Object { Write-Host $_ }
           }
 
       # ------------------------------------------------------------------
-      # Neu MSBuild khong ra .sys: build thu cong bang cl/link voi day du lib
+      # Fallback 2: cl/link truc tiep (build_rsp2.ps1) voi log day du
       # ------------------------------------------------------------------
-      - name: Fallback manual build
-        if: failure() || !hashFiles('**/sec_ts_y79a.sys')
+      - name: Fallback rsp build (in day du log)
+        if: always()
         shell: pwsh
-        run: |
-          Write-Host "=== fallback: build thu cong ==="
-          powershell -ExecutionPolicy Bypass -File .\build_manual.ps1
         continue-on-error: true
+        run: |
+          Write-Host "=== FALLBACK RSP BUILD ==="
+          powershell -ExecutionPolicy Bypass -File .\build_rsp2.ps1 2>&1 | ForEach-Object { Write-Host $_ }
 
-      - name: Collect artifacts
+      - name: Ket qua cuoi cung
         if: always()
         shell: pwsh
         run: |
-          Write-Host "=== tim .sys ==="
-          Get-ChildItem -Recurse -Filter *.sys -ErrorAction SilentlyContinue | ForEach-Object {
-            Write-Host ("  {0}  {1} B" -f $_.FullName, $_.Length)
-          }
-          Write-Host "=== tim .cat/.inf ==="
-          Get-ChildItem -Recurse -Include *.cat,*.inf -ErrorAction SilentlyContinue | ForEach-Object {
-            Write-Host ("  {0}" -f $_.FullName)
-          }
+          Write-Host "=== TIM .sys TREN TOAN BO WORKSPACE ==="
+          $found = Get-ChildItem -Recurse -Filter *.sys -ErrorAction SilentlyContinue
+          if ($found) {
+            $found | ForEach-Object { Write-Host ("  {0}  {1} B" -f $_.FullName, $_.Length) }
+          } else { Write-Host "  <khong co .sys nao>" }
+          Write-Host "=== TIM .cat/.inf ==="
+          Get-ChildItem -Recurse -Include *.cat,*.inf -ErrorAction SilentlyContinue |
+            ForEach-Object { Write-Host ("  " + $_.FullName) }
 
       - name: Upload driver package
         if: always()
@@ -102,9 +139,9 @@ jobs:
         with:
           name: sec_ts_y79a-driver
           path: |
-            **/sec_ts_y79a.sys
-            **/sec_ts_y79a.cat
-            **/sec_ts_y79a.inf
-            **/build_log.txt
-            **/build_manual_log.txt
+            **/*.sys
+            **/*.cat
+            **/*.inf
+            **/build_*.txt
+            **/*.log
           if-no-files-found: warn
