@@ -1,0 +1,75 @@
+;/*++
+;
+; Module Name:
+;    sec_ts_y79a.inf
+;
+; Abstract:
+;    Samsung Y79A (sec_ts) touch controller driver for Windows 11 ARM64.
+;    Binds to ACPI\SEC0048 (child of the Qualcomm QUPv3 SE5 I2C controller).
+;
+;--*/
+
+[Version]
+Signature   = "$WINDOWS NT$"
+Class       = HIDClass
+ClassGuid   = {745a17a0-74d3-11d0-b6fe-00a0c90f57da}
+Provider    = %ProviderName%
+CatalogFile = sec_ts_y79a.cat
+DriverVer   = 10/24/2026,1.0.0.0
+PnpLockdown = 1
+
+[DestinationDirs]
+DefaultDestDir = 13
+SecTs_DriverFiles = 13
+
+[SourceDisksNames]
+1 = %DiskName%,,,""
+
+[SourceDisksFiles]
+sec_ts_y79a.sys = 1,,
+
+[Manufacturer]
+%ProviderName% = SecTs, NTARM64
+
+[SecTs.NTARM64]
+%SecTs.DeviceDesc% = SecTs_Device, ACPI\SEC0048
+
+[SecTs_Device.NT]
+CopyFiles = SecTs_DriverFiles
+
+[SecTs_DriverFiles]
+sec_ts_y79a.sys,,,0x100
+
+[SecTs_Device.NT.Services]
+AddService = sec_ts_y79a, %SPSVCINST_ASSOCSERVICE%, SecTs_Service
+
+[SecTs_Service]
+DisplayName    = %SecTs.ServiceDesc%
+ServiceType    = %SERVICE_KERNEL_DRIVER%
+StartType      = %SERVICE_DEMAND_START%
+ErrorControl   = %SERVICE_ERROR_NORMAL%
+ServiceBinary  = %13%\sec_ts_y79a.sys
+
+[SecTs_Device.NT.Wdf]
+KmdfService = sec_ts_y79a, SecTs_wdfsect
+
+[SecTs_wdfsect]
+KmdfLibraryVersion = 1.33
+
+[SecTs_Device.NT.HW]
+AddReg = SecTs_Registry
+
+[SecTs_Registry]
+HKR,"Parameters","PollIntervalMs",0x00010001,4
+HKR,"Parameters","MaxFingers",0x00010001,10
+
+[Strings]
+ProviderName        = "Y2Q Port Project"
+DiskName            = "Samsung Y79A touch driver"
+SecTs.DeviceDesc    = "Samsung Y79A Touch Controller (sec_ts)"
+SecTs.ServiceDesc   = "Samsung Y79A Touch Controller Driver"
+
+SPSVCINST_ASSOCSERVICE   = 0x00000002
+SERVICE_KERNEL_DRIVER    = 1
+SERVICE_DEMAND_START     = 3
+SERVICE_ERROR_NORMAL     = 1

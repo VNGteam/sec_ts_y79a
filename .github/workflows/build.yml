@@ -1,0 +1,110 @@
+name: Build sec_ts_y79a (Windows ARM64 driver)
+
+on:
+  push:
+    branches: [ main, master ]
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: windows-2022
+    timeout-minutes: 45
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      # ------------------------------------------------------------------
+      # WDK: runner windows-2022 co san VS2022 + Windows SDK 10.0.26100,
+      # nhung KHONG co WDK. Cai bang winget.
+      # ------------------------------------------------------------------
+      - name: Install Windows Driver Kit
+        shell: pwsh
+        run: |
+          Write-Host "=== cai WDK ==="
+          winget install --id Microsoft.WindowsWDK.10.0.26100 -e `
+            --accept-package-agreements --accept-source-agreements --disable-interactivity
+          Write-Host "exit=$LASTEXITCODE"
+
+      - name: Locate toolchain
+        shell: pwsh
+        run: |
+          $vswhere = "${env:ProgramFiles(x86)}\Microsoft Visual Studio\Installer\vswhere.exe"
+          Write-Host "=== VS instances ==="
+          & $vswhere -all -products * -format value -property installationPath
+          Write-Host "=== MSBuild ==="
+          $mb = & $vswhere -latest -products * -requires Microsoft.Component.MSBuild -find MSBuild\**\Bin\MSBuild.exe
+          Write-Host "msbuild=$mb"
+          Write-Host "=== Windows Kits ==="
+          $kits = "${env:ProgramFiles(x86)}\Windows Kits\10"
+          Get-ChildItem "$kits\Include" -Directory | ForEach-Object { Write-Host ("  Include\" + $_.Name) }
+          Get-ChildItem "$kits\Lib" -Directory | ForEach-Object { Write-Host ("  Lib\" + $_.Name) }
+          Write-Host "=== WDK km headers ==="
+          foreach ($v in (Get-ChildItem "$kits\Include" -Directory | Where-Object Name -match '^10\.')) {
+            $wdm = Join-Path $v.FullName 'km\wdm.h'
+            Write-Host ("  {0} km\wdm.h = {1}" -f $v.Name, (Test-Path $wdm))
+          }
+          Write-Host "=== WDF libs arm64 ==="
+          $wdf = Join-Path $kits 'Lib\wdf\kmdf\arm64'
+          if (Test-Path $wdf) { Get-ChildItem $wdf -Directory | ForEach-Object { Write-Host ("  " + $_.Name) } }
+          Write-Host "=== cl.exe arm64 ==="
+          $msvc = Get-ChildItem "${env:ProgramFiles}\Microsoft Visual Studio\2022\*\VC\Tools\MSVC" -Directory -ErrorAction SilentlyContinue | Select-Object -First 1
+          if ($msvc) { Write-Host ("  " + (Test-Path (Join-Path $msvc.FullName 'bin\Hostx64\arm64\cl.exe'))) }
+
+      # ------------------------------------------------------------------
+      # Build bang MSBuild + PlatformToolset WindowsKernelModeDriver10.0
+      # (cach chuan; MSBuild tu them moi lib runtime can thiet)
+      # ------------------------------------------------------------------
+      - name: Build driver (MSBuild, Release ARM64)
+        shell: pwsh
+        run: |
+          $vswhere = "${env:ProgramFiles(x86)}\Microsoft Visual Studio\Installer\vswhere.exe"
+          $msbuild = & $vswhere -latest -products * -requires Microsoft.Component.MSBuild -find MSBuild\**\Bin\MSBuild.exe | Select-Object -First 1
+          Write-Host "msbuild = $msbuild"
+          if (-not $msbuild) { throw "Khong tim thay MSBuild" }
+
+          & $msbuild sec_ts_y79a.vcxproj /p:Configuration=Release /p:Platform=ARM64 /t:Build /v:normal /nologo
+          if ($LASTEXITCODE -ne 0) {
+            Write-Host "=== MSBuild that bai, thu liet ke target ==="
+            & $msbuild sec_ts_y79a.vcxproj /t:Build /p:Configuration=Release /p:Platform=ARM64 /v:diag 2>&1 |
+              Select-String -Pattern 'error|warning MSB|Toolset|PlatformToolsets' | Select-Object -First 40 |
+              ForEach-Object { Write-Host $_ }
+            exit 1
+          }
+
+      # ------------------------------------------------------------------
+      # Neu MSBuild khong ra .sys: build thu cong bang cl/link voi day du lib
+      # ------------------------------------------------------------------
+      - name: Fallback manual build
+        if: failure() || !hashFiles('**/sec_ts_y79a.sys')
+        shell: pwsh
+        run: |
+          Write-Host "=== fallback: build thu cong ==="
+          powershell -ExecutionPolicy Bypass -File .\build_manual.ps1
+        continue-on-error: true
+
+      - name: Collect artifacts
+        if: always()
+        shell: pwsh
+        run: |
+          Write-Host "=== tim .sys ==="
+          Get-ChildItem -Recurse -Filter *.sys -ErrorAction SilentlyContinue | ForEach-Object {
+            Write-Host ("  {0}  {1} B" -f $_.FullName, $_.Length)
+          }
+          Write-Host "=== tim .cat/.inf ==="
+          Get-ChildItem -Recurse -Include *.cat,*.inf -ErrorAction SilentlyContinue | ForEach-Object {
+            Write-Host ("  {0}" -f $_.FullName)
+          }
+
+      - name: Upload driver package
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: sec_ts_y79a-driver
+          path: |
+            **/sec_ts_y79a.sys
+            **/sec_ts_y79a.cat
+            **/sec_ts_y79a.inf
+            **/build_log.txt
+            **/build_manual_log.txt
+          if-no-files-found: warn
