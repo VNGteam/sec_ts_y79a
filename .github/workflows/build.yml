@@ -124,11 +124,19 @@ jobs:
         if: always()
         shell: pwsh
         run: |
-          Write-Host "=== TIM .sys TREN TOAN BO WORKSPACE ==="
-          $found = Get-ChildItem -Recurse -Filter *.sys -ErrorAction SilentlyContinue
-          if ($found) {
-            $found | ForEach-Object { Write-Host ("  {0}  {1} B" -f $_.FullName, $_.Length) }
-          } else { Write-Host "  <khong co .sys nao>" }
+          Write-Host ""
+          Write-Host "############################################"
+          Write-Host "#        KET QUA BUILD DRIVER (y2q)        #"
+          Write-Host "############################################"
+          $sys = Get-ChildItem -Recurse -Filter sec_ts_y79a.sys -ErrorAction SilentlyContinue
+          if ($sys) {
+            foreach ($f in $sys) { Write-Host ("*** THANH CONG: " + $f.FullName + "  " + $f.Length + " B ***") }
+          } else {
+            Write-Host "*** THAT BAI: khong co sec_ts_y79a.sys ***"
+            Get-ChildItem -Recurse -Filter *.sys -ErrorAction SilentlyContinue |
+              ForEach-Object { Write-Host ("  sys khac: " + $_.FullName) }
+          }
+          Write-Host "############################################"
           Write-Host "=== TIM .cat/.inf ==="
           Get-ChildItem -Recurse -Include *.cat,*.inf -ErrorAction SilentlyContinue |
             ForEach-Object { Write-Host ("  " + $_.FullName) }
