@@ -86,12 +86,38 @@ jobs:
           if (-not $mb) { Write-Host "!! khong co MSBuild"; exit 1 }
 
           Write-Host ""
-          Write-Host "=== MSBUILD OUTPUT (day du) ==="
+          Write-Host "=== MSBUILD OUTPUT (day du, ghi ra file) ==="
           & $mb sec_ts_y79a.vcxproj /p:Configuration=Release /p:Platform=ARM64 /t:Build /v:normal /nologo 2>&1 |
-            ForEach-Object { Write-Host $_ }
+            Tee-Object -FilePath msbuild_log.txt
           $rc = $LASTEXITCODE
           Write-Host "=== msbuild exit = $rc ==="
+          Write-Host ""
+          Write-Host "=== CHI TIET LOI (error/warning) ==="
+          if (Test-Path msbuild_log.txt) {
+            Select-String -Path msbuild_log.txt -Pattern 'error|Error|warning MSB|MSB[0-9]+' |
+              Select-Object -First 40 | ForEach-Object { Write-Host ("  >> " + $_.Line) }
+          }
           exit $rc
+
+      - name: In log MSBuild (chi tiet loi)
+        if: always()
+        shell: pwsh
+        run: |
+          Write-Host "==================================================="
+          Write-Host "=== NOI DUNG msbuild_log.txt (200 dong cuoi) ==="
+          Write-Host "==================================================="
+          if (Test-Path msbuild_log.txt) {
+            Get-Content msbuild_log.txt -Tail 200 | ForEach-Object { Write-Host $_ }
+          } else { Write-Host "<khong co msbuild_log.txt>" }
+          Write-Host "==================================================="
+          Write-Host "=== LIET KE build\ARM64\Release ==="
+          if (Test-Path 'build\ARM64\Release') {
+            Get-ChildItem 'build\ARM64\Release' -Recurse | ForEach-Object { Write-Host ("  " + $_.FullName) }
+          } else { Write-Host "  <khong co thu muc build>" }
+          Write-Host "=== LIET KE obj\ARM64\Release (tim .obj) ==="
+          if (Test-Path 'build\obj\ARM64\Release') {
+            Get-ChildItem 'build\obj\ARM64\Release' -Recurse -Filter *.obj | ForEach-Object { Write-Host ("  " + $_.Name) }
+          } else { Write-Host "  <khong co obj>" }
 
       # ------------------------------------------------------------------
       # Neu MSBuild fail: build thu cong, in day du log
@@ -151,5 +177,6 @@ jobs:
             **/*.cat
             **/*.inf
             **/build_*.txt
+            **/msbuild_log.txt
             **/*.log
           if-no-files-found: warn
