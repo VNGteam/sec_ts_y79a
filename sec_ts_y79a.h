@@ -142,6 +142,7 @@ typedef struct _SEC_TS_DEVICE {
     VHFHANDLE        VhfHandle;
     BOOLEAN          VhfReady;          // EvtVhfReadyForNextReadReport fired
     BOOLEAN          VhfStarted;
+    PVOID            DescCopy;          // ban copy non-paged cua report descriptor
 
     // report buffer (one per submit)
     PSEC_TS_HID_REPORT ReportBuffer;

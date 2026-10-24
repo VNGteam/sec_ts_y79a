@@ -111,6 +111,12 @@ SecTsHidCreate(
     NTSTATUS    status;
     VHF_CONFIG  vhfConfig;
 
+    // don ban copy cu neu co (truong hop EvtDeviceAdd goi lai)
+    if (Dev->DescCopy != NULL) {
+        ExFreePoolWithTag(Dev->DescCopy, SEC_TS_POOL_TAG);
+        Dev->DescCopy = NULL;
+    }
+
     Dev->ReportBuffer = (PSEC_TS_HID_REPORT)ExAllocatePool2(POOL_FLAG_NON_PAGED,
                                                             sizeof(SEC_TS_HID_REPORT),
                                                             SEC_TS_POOL_TAG);
@@ -129,11 +135,47 @@ SecTsHidCreate(
     vhfConfig.VhfClientContext          = Dev;
     vhfConfig.EvtVhfReadyForNextReadReport = SecTsVhfReadyForNextReadReport;
 
+    // Chan doan: in ra cac tham so truoc khi goi VhfCreate
+    SecTsTrace("HidCreate: DeviceObject=%x  DescLen=%d  DescPtr=%x",
+               (ULONG)(ULONG_PTR)vhfConfig.DeviceObject,
+               (ULONG)vhfConfig.ReportDescriptorLength,
+               (ULONG)(ULONG_PTR)vhfConfig.ReportDescriptor);
+    SecTsTrace("HidCreate: ClientContext=%x  EvtReady=%x",
+               (ULONG)(ULONG_PTR)vhfConfig.VhfClientContext,
+               (ULONG)(ULONG_PTR)vhfConfig.EvtVhfReadyForNextReadReport);
+
     SecTsTrace("HidCreate: goi VhfCreate");
     status = VhfCreate(&vhfConfig, &Dev->VhfHandle);
     if (!NT_SUCCESS(status)) {
         SecTsTrace("VhfCreate FAIL status=%x", status);
-        return status;
+
+        //
+        // Thu lai voi report descriptor copy sang non-paged pool
+        // (VHF co the yeu cau descriptor o vung non-paged)
+        //
+        {
+            PUCHAR descCopy = (PUCHAR)ExAllocatePool2(POOL_FLAG_NON_PAGED,
+                                                      sizeof(g_SecTsReportDescriptor),
+                                                      SEC_TS_POOL_TAG);
+            if (descCopy != NULL) {
+                RtlCopyMemory(descCopy, g_SecTsReportDescriptor, sizeof(g_SecTsReportDescriptor));
+                VHF_CONFIG_INIT(&vhfConfig,
+                                WdfDeviceWdmGetDeviceObject(Dev->Device),
+                                sizeof(g_SecTsReportDescriptor),
+                                descCopy);
+                vhfConfig.VhfClientContext            = Dev;
+                vhfConfig.EvtVhfReadyForNextReadReport = SecTsVhfReadyForNextReadReport;
+                status = VhfCreate(&vhfConfig, &Dev->VhfHandle);
+                SecTsTrace("VhfCreate (non-paged desc) status=%x", status);
+                if (!NT_SUCCESS(status)) {
+                    ExFreePoolWithTag(descCopy, SEC_TS_POOL_TAG);
+                    return status;
+                }
+                Dev->DescCopy = descCopy;
+            } else {
+                return status;
+            }
+        }
     }
     SecTsTrace("VhfCreate OK");
 
