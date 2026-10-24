@@ -22,6 +22,16 @@
 #define SEC_TS_POOL_TAG 'TSYS'
 
 //
+// Ghi trace ra file de chan doan khi khong co cam ung/chuot.
+// Dung ZwCreateFile + ZwWriteFile tu kernel.
+//
+VOID
+SecTsTrace(
+    _In_ PCSTR Format,
+    ...
+    );
+
+//
 // ---- Chip protocol constants (from sec_ts.h, y79a) -------------------------
 //
 #define SEC_TS_CMD_SENSE_ON            0x10

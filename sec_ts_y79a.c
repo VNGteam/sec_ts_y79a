@@ -213,6 +213,17 @@ SecTsEvtDeviceAdd(
     UNREFERENCED_PARAMETER(Driver);
     PAGED_CODE();
 
+    //
+    // Cac buoc khoi tao BAT BUOC cho VHF (VhfCreate yeu cau FDO that su):
+    //   - DeviceType = FILE_DEVICE_UNKNOWN
+    //   - Exclusive  = FALSE (VHF/HID can mo nhieu handle)
+    //   - IoType     = BufferedIO
+    // Thieu cac buoc nay -> VhfCreate tra ve 0xc0000010 (STATUS_INVALID_DEVICE_REQUEST)
+    //
+    WdfDeviceInitSetDeviceType(DeviceInit, FILE_DEVICE_UNKNOWN);
+    WdfDeviceInitSetExclusive(DeviceInit, FALSE);
+    WdfDeviceInitSetIoType(DeviceInit, WdfDeviceIoBuffered);
+
     WDF_PNPPOWER_EVENT_CALLBACKS_INIT(&pnpCallbacks);
     pnpCallbacks.EvtDevicePrepareHardware = SecTsEvtPrepareHardware;
     pnpCallbacks.EvtDeviceReleaseHardware = SecTsEvtReleaseHardware;
@@ -222,10 +233,14 @@ SecTsEvtDeviceAdd(
 
     WDF_OBJECT_ATTRIBUTES_INIT_CONTEXT_TYPE(&attributes, SEC_TS_DEVICE);
 
+    SecTsTrace("EvtDeviceAdd: bat dau");
+
     status = WdfDeviceCreate(&DeviceInit, &attributes, &device);
     if (!NT_SUCCESS(status)) {
+        SecTsTrace("WdfDeviceCreate FAIL status=%x", status);
         return status;
     }
+    SecTsTrace("WdfDeviceCreate OK");
 
     dev = SecTsGetDeviceContext(device);
     RtlZeroMemory(dev, sizeof(SEC_TS_DEVICE));
@@ -233,13 +248,17 @@ SecTsEvtDeviceAdd(
 
     status = WdfWaitLockCreate(WDF_NO_OBJECT_ATTRIBUTES, &dev->I2CLock);
     if (!NT_SUCCESS(status)) {
+        SecTsTrace("WdfWaitLockCreate FAIL status=%x", status);
         return status;
     }
+    SecTsTrace("WdfWaitLockCreate OK");
 
     status = SecTsHidCreate(dev);
     if (!NT_SUCCESS(status)) {
+        SecTsTrace("SecTsHidCreate FAIL status=%x", status);
         return status;
     }
+    SecTsTrace("SecTsHidCreate OK -> EvtDeviceAdd thanh cong");
 
     return STATUS_SUCCESS;
 }

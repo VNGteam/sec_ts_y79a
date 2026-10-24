@@ -115,6 +115,7 @@ SecTsHidCreate(
                                                             sizeof(SEC_TS_HID_REPORT),
                                                             SEC_TS_POOL_TAG);
     if (Dev->ReportBuffer == NULL) {
+        SecTsTrace("HidCreate: ExAllocatePool2 FAIL");
         return STATUS_INSUFFICIENT_RESOURCES;
     }
     RtlZeroMemory(Dev->ReportBuffer, sizeof(SEC_TS_HID_REPORT));
@@ -128,17 +129,22 @@ SecTsHidCreate(
     vhfConfig.VhfClientContext          = Dev;
     vhfConfig.EvtVhfReadyForNextReadReport = SecTsVhfReadyForNextReadReport;
 
+    SecTsTrace("HidCreate: goi VhfCreate");
     status = VhfCreate(&vhfConfig, &Dev->VhfHandle);
     if (!NT_SUCCESS(status)) {
+        SecTsTrace("VhfCreate FAIL status=%x", status);
         return status;
     }
+    SecTsTrace("VhfCreate OK");
 
     status = VhfStart(Dev->VhfHandle);
     if (!NT_SUCCESS(status)) {
+        SecTsTrace("VhfStart FAIL status=%x", status);
         VhfDelete(Dev->VhfHandle, TRUE);
         Dev->VhfHandle = NULL;
         return status;
     }
+    SecTsTrace("VhfStart OK");
 
     Dev->VhfStarted = TRUE;
     Dev->VhfReady   = TRUE;     // first report may be submitted immediately

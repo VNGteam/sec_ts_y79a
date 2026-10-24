@@ -60,6 +60,7 @@
     <ClCompile Include="sec_ts_chip.c" />
     <ClCompile Include="sec_ts_hid.c" />
     <ClCompile Include="sec_ts_poll.c" />
+    <ClCompile Include="sec_ts_trace.c" />
   </ItemGroup>
 
   <ItemGroup>

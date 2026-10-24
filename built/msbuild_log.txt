@@ -1,0 +1,91 @@
+Build started 10/23/2026 8:24:15 PM.
+
+Project "D:\a\sec_ts_y79a\sec_ts_y79a\sec_ts_y79a.vcxproj" on node 1 (Build target(s)).
+DriverBuildNotifications:
+  Building 'sec_ts_y79a' with toolset 'WindowsKernelModeDriver10.0' and the 'Desktop' target platform.
+  Using KMDF 1.33.
+PrepareForBuild:
+  Creating directory "D:\a\sec_ts_y79a\sec_ts_y79a\build\obj\ARM64\Release\".
+  Structured output is enabled. The formatting of compiler diagnostics will reflect the error hierarchy. See https://aka.ms/cpp/structured-output for more details.
+  Creating directory "D:\a\sec_ts_y79a\sec_ts_y79a\build\ARM64\Release\".
+  Creating directory "D:\a\sec_ts_y79a\sec_ts_y79a\build\obj\ARM64\Release\sec_ts_y79a.tlog\".
+InitializeBuildStatus:
+  Creating "D:\a\sec_ts_y79a\sec_ts_y79a\build\obj\ARM64\Release\sec_ts_y79a.tlog\unsuccessfulbuild" because "AlwaysCreate" was specified.
+  Touching "D:\a\sec_ts_y79a\sec_ts_y79a\build\obj\ARM64\Release\sec_ts_y79a.tlog\unsuccessfulbuild".
+StampInf:
+  C:\Program Files (x86)\Windows Kits\10\bin\10.0.26100.0\x86\stampinf.exe -d "*" -a "ARM64" -v "*" -k "1.33"  -x -f D:\a\sec_ts_y79a\sec_ts_y79a\build\obj\ARM64\Release\sec_ts_y79a.inf 
+  Copying "D:\a\sec_ts_y79a\sec_ts_y79a\sec_ts_y79a.inf" to "D:\a\sec_ts_y79a\sec_ts_y79a\build\obj\ARM64\Release\sec_ts_y79a.inf" for stamping
+  Stamping D:\a\sec_ts_y79a\sec_ts_y79a\build\obj\ARM64\Release\sec_ts_y79a.inf
+  Stamping [Version] section with DriverVer=10/23/2026,20.24.19.0
+  Copying file from "D:\a\sec_ts_y79a\sec_ts_y79a\build\obj\ARM64\Release\sec_ts_y79a.inf" to "D:\a\sec_ts_y79a\sec_ts_y79a\build\ARM64\Release\sec_ts_y79a.inf".
+C:\Program Files (x86)\Windows Kits\10\build\10.0.26100.0\WindowsDriver.common.targets(692,5): error : INF verification exception: Unable to load DLL 'x86\InfVerif.dll': The specified module could not be found. (Exception from HRESULT: 0x8007007E) [D:\a\sec_ts_y79a\sec_ts_y79a\sec_ts_y79a.vcxproj]
+ClCompile:
+  C:\Program Files\Microsoft Visual Studio\2022\Enterprise\VC\Tools\MSVC\14.44.35207\bin\HostX86\arm64\CL.exe /c /ID:\a\sec_ts_y79a\sec_ts_y79a\build\obj\ARM64\Release\ /ID:\a\sec_ts_y79a\sec_ts_y79a\build\obj\ARM64\Release\ /Zi /nologo /W3 /WX- /diagnostics:column /O2 /Os /Oy- /GL /D _WIN64 /D POOL_NX_OPTIN=1 /D _ARM64_ /D ARM64 /D _USE_DECLSPECS_FOR_SAL=1 /D STD_CALL /D _WIN32_WINNT=0x0A00 /D WINVER=0x0A00 /D WINNT=1 /D NTDDI_VERSION=0xA000010 /D _ARM64_WINAPI_PARTITION_DESKTOP_SDK_AVAILABLE=1 /D KMDF_VERSION_MAJOR=1 /D KMDF_VERSION_MINOR=33 /GF /Gm- /Zp8 /GS /guard:cf /Gy /fp:precise /Qspectre /Zc:wchar_t- /Zc:forScope /Zc:inline /GR- /Fo"D:\a\sec_ts_y79a\sec_ts_y79a\build\obj\ARM64\Release\\" /Fd"D:\a\sec_ts_y79a\sec_ts_y79a\build\obj\ARM64\Release\vc143.pdb" /external:W3 /wd4064 /wd4627 /wd4627 /wd4366 /wd4603 /wd4627 /wd4986 /wd4987 /FI"C:\Program Files (x86)\Windows Kits\10\Include\10.0.26100.0\shared\warning.h" /analyze- /FC /errorReport:queue /kernel -cbstring  /d1nodatetime /d1import_no_registry /d2AllowCompatibleILVersions /d2Zi+ sec_ts_y79a.c sec_ts_hw.c sec_ts_chip.c sec_ts_hid.c sec_ts_poll.c
+  sec_ts_y79a.c
+  sec_ts_hw.c
+  sec_ts_chip.c
+  sec_ts_hid.c
+  sec_ts_poll.c
+Link:
+  C:\Program Files\Microsoft Visual Studio\2022\Enterprise\VC\Tools\MSVC\14.44.35207\bin\HostX86\arm64\link.exe /ERRORREPORT:QUEUE /OUT:"D:\a\sec_ts_y79a\sec_ts_y79a\build\ARM64\Release\sec_ts_y79a.sys" /VERSION:"10.0" /INCREMENTAL:NO /NOLOGO /WX arm64rt.lib "C:\Program Files (x86)\Windows Kits\10\lib\10.0.26100.0\km\arm64\BufferOverflowFastFailK.lib" "C:\Program Files (x86)\Windows Kits\10\lib\10.0.26100.0\km\arm64\ntoskrnl.lib" "C:\Program Files (x86)\Windows Kits\10\lib\10.0.26100.0\km\arm64\hal.lib" "C:\Program Files (x86)\Windows Kits\10\lib\10.0.26100.0\km\arm64\wmilib.lib" "C:\Program Files (x86)\Windows Kits\10\lib\wdf\kmdf\arm64\1.33\WdfLdr.lib" "C:\Program Files (x86)\Windows Kits\10\lib\wdf\kmdf\arm64\1.33\WdfDriverEntry.lib" "C:\Program Files (x86)\Windows Kits\10\lib\10.0.26100.0\km\arm64\\vhfkm.lib" /NODEFAULTLIB /NODEFAULTLIB:oldnames.lib /MANIFEST:NO /DEBUG /PDB:"D:\a\sec_ts_y79a\sec_ts_y79a\build\ARM64\Release\sec_ts_y79a.pdb" /SUBSYSTEM:NATIVE,"10.00" /STACK:"0x40000","0x2000" /Driver /OPT:REF /OPT:ICF /LTCG /LTCGOUT:"D:\a\sec_ts_y79a\sec_ts_y79a\build\obj\ARM64\Release\sec_ts_y79a.iobj" /ENTRY:"FxDriverEntry" /RELEASE /IMPLIB:"D:\a\sec_ts_y79a\sec_ts_y79a\build\ARM64\Release\sec_ts_y79a.lib" /MERGE:"_TEXT=.text;_PAGE=PAGE" /MACHINE:ARM64 /PROFILE /guard:cf /kernel /machine:arm64 /IGNORE:4078,4221,4198 /osversion:10.0 /pdbcompress /debugtype:pdata D:\a\sec_ts_y79a\sec_ts_y79a\build\obj\ARM64\Release\sec_ts_y79a.obj
+  D:\a\sec_ts_y79a\sec_ts_y79a\build\obj\ARM64\Release\sec_ts_hw.obj
+  D:\a\sec_ts_y79a\sec_ts_y79a\build\obj\ARM64\Release\sec_ts_chip.obj
+  D:\a\sec_ts_y79a\sec_ts_y79a\build\obj\ARM64\Release\sec_ts_hid.obj
+  D:\a\sec_ts_y79a\sec_ts_y79a\build\obj\ARM64\Release\sec_ts_poll.obj
+  Generating code
+  Finished generating code
+  sec_ts_y79a.vcxproj -> D:\a\sec_ts_y79a\sec_ts_y79a\build\ARM64\Release\sec_ts_y79a.sys
+Project "D:\a\sec_ts_y79a\sec_ts_y79a\sec_ts_y79a.vcxproj" (1) is building "D:\a\sec_ts_y79a\sec_ts_y79a\sec_ts_y79a.vcxproj" (1:2) on node 1 (TestSign target(s)).
+TestSign:
+  The driver will be test-signed. Driver signing options can be changed from the project properties.
+  Sign Inputs: D:\a\sec_ts_y79a\sec_ts_y79a\build\ARM64\Release\sec_ts_y79a.sys
+  C:\Program Files (x86)\Windows Kits\10\bin\10.0.26100.0\x86\signtool.exe sign /ph /fd "sha256" /sha1 "C2F5966C3CE57B109B42DADFE21D80624A9FFC54" 
+  Done Adding Additional Store
+  Successfully signed: D:\a\sec_ts_y79a\sec_ts_y79a\build\ARM64\Release\sec_ts_y79a.sys
+  
+  Certificate used for signing: issued to = WDKTestCert runneradmin,134372606675347909 and thumbprint = C2F5966C3CE57B109B42DADFE21D80624A9FFC54
+  Exported Certificate: D:\a\sec_ts_y79a\sec_ts_y79a\build\ARM64\Release\sec_ts_y79a.cer
+Done Building Project "D:\a\sec_ts_y79a\sec_ts_y79a\sec_ts_y79a.vcxproj" (TestSign target(s)).
+DriverPackageTarget:
+  Packaging up the following projects for the following configurations:
+  
+   Configuration='' Platform=''
+  
+  
+  The following files will be packaged:
+  
+  File to package:      D:\a\sec_ts_y79a\sec_ts_y79a\build\obj\ARM64\Release\sec_ts_y79a.inf.
+  Location in Package:  \sec_ts_y79a.inf.
+  Requested by project: 
+  
+  
+  Creating directory "D:\a\sec_ts_y79a\sec_ts_y79a\build\ARM64\Release\sec_ts_y79a".
+  Copying file from "D:\a\sec_ts_y79a\sec_ts_y79a\build\obj\ARM64\Release\sec_ts_y79a.inf" to "D:\a\sec_ts_y79a\sec_ts_y79a\build\ARM64\Release\sec_ts_y79a\sec_ts_y79a.inf".
+Inf2Cat:
+  C:\Program Files (x86)\Windows Kits\10\bin\10.0.26100.0\x86\inf2cat.exe /os:Server10_arm64 /driver:D:\a\sec_ts_y79a\sec_ts_y79a\build\ARM64\Release\sec_ts_y79a\ 
+  .......................
+  Signability test failed.
+  
+  Errors:
+  22.9.1: sec_ts_y79a.sys in [sects_driverfiles] of sec_ts_y79a\sec_ts_y79a.inf is missing or cannot be decompressed from source media.  Please verify all path values specified in SourceDisksNames, SouceDisksFiles, and CopyFiles sections resolve to the actual location of the file, and are expressed in terms relative to the location of the inf.
+  
+  Warnings:
+  None
+C:\Program Files (x86)\Windows Kits\10\build\10.0.26100.0\WindowsDriver.common.targets(1432,5): error MSB6006: "inf2cat.exe" exited with code -2. [D:\a\sec_ts_y79a\sec_ts_y79a\sec_ts_y79a.vcxproj]
+Done Building Project "D:\a\sec_ts_y79a\sec_ts_y79a\sec_ts_y79a.vcxproj" (Build target(s)) -- FAILED.
+
+Build FAILED.
+
+"D:\a\sec_ts_y79a\sec_ts_y79a\sec_ts_y79a.vcxproj" (Build target) (1) ->
+(InfVerif target) -> 
+  C:\Program Files (x86)\Windows Kits\10\build\10.0.26100.0\WindowsDriver.common.targets(692,5): error : INF verification exception: Unable to load DLL 'x86\InfVerif.dll': The specified module could not be found. (Exception from HRESULT: 0x8007007E) [D:\a\sec_ts_y79a\sec_ts_y79a\sec_ts_y79a.vcxproj]
+
+
+"D:\a\sec_ts_y79a\sec_ts_y79a\sec_ts_y79a.vcxproj" (Build target) (1) ->
+(Inf2Cat target) -> 
+  C:\Program Files (x86)\Windows Kits\10\build\10.0.26100.0\WindowsDriver.common.targets(1432,5): error MSB6006: "inf2cat.exe" exited with code -2. [D:\a\sec_ts_y79a\sec_ts_y79a\sec_ts_y79a.vcxproj]
+
+    0 Warning(s)
+    2 Error(s)
+
+Time Elapsed 00:00:13.84
