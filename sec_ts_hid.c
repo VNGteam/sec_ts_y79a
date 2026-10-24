@@ -127,13 +127,26 @@ SecTsHidCreate(
     RtlZeroMemory(Dev->ReportBuffer, sizeof(SEC_TS_HID_REPORT));
     Dev->ReportBuffer->ReportId = 1;
 
-    VHF_CONFIG_INIT(&vhfConfig,
-                    WdfDeviceWdmGetDeviceObject(Dev->Device),
-                    sizeof(g_SecTsReportDescriptor),
-                    (PUCHAR)g_SecTsReportDescriptor);
-
-    vhfConfig.VhfClientContext          = Dev;
+    //
+    // KHONG dung VHF_CONFIG_INIT: header WDK 26100 co the khac kich thuoc
+    // VHF_CONFIG ma vhfkm.sys (Windows 26300) mong doi -> VhfCreate tra
+    // STATUS_INVALID_DEVICE_REQUEST (0xc0000010).
+    // Tu set tung truong voi Size = sizeof(VHF_CONFIG) cua header dang dung.
+    //
+    RtlZeroMemory(&vhfConfig, sizeof(vhfConfig));
+    vhfConfig.Size                  = sizeof(VHF_CONFIG);
+    vhfConfig.DeviceObject          = WdfDeviceWdmGetDeviceObject(Dev->Device);
+    vhfConfig.ReportDescriptorLength = (USHORT)sizeof(g_SecTsReportDescriptor);
+    vhfConfig.ReportDescriptor      = (PUCHAR)g_SecTsReportDescriptor;
+    vhfConfig.VhfClientContext      = Dev;
     vhfConfig.EvtVhfReadyForNextReadReport = SecTsVhfReadyForNextReadReport;
+    vhfConfig.VendorID              = 0x04E8;   // Samsung
+    vhfConfig.ProductID             = 0x79A0;   // Y79A
+    vhfConfig.VersionNumber         = 0x0100;
+
+    SecTsTrace("HidCreate: sizeof(VHF_CONFIG)=%d  Size=%d  DescLen=%d",
+               (ULONG)sizeof(VHF_CONFIG), (ULONG)vhfConfig.Size,
+               (ULONG)vhfConfig.ReportDescriptorLength);
 
     // Chan doan: in ra cac tham so truoc khi goi VhfCreate
     SecTsTrace("HidCreate: DeviceObject=%x  DescLen=%d  DescPtr=%x",
@@ -159,12 +172,16 @@ SecTsHidCreate(
                                                       SEC_TS_POOL_TAG);
             if (descCopy != NULL) {
                 RtlCopyMemory(descCopy, g_SecTsReportDescriptor, sizeof(g_SecTsReportDescriptor));
-                VHF_CONFIG_INIT(&vhfConfig,
-                                WdfDeviceWdmGetDeviceObject(Dev->Device),
-                                sizeof(g_SecTsReportDescriptor),
-                                descCopy);
-                vhfConfig.VhfClientContext            = Dev;
+                RtlZeroMemory(&vhfConfig, sizeof(vhfConfig));
+                vhfConfig.Size                   = sizeof(VHF_CONFIG);
+                vhfConfig.DeviceObject           = WdfDeviceWdmGetDeviceObject(Dev->Device);
+                vhfConfig.ReportDescriptorLength = (USHORT)sizeof(g_SecTsReportDescriptor);
+                vhfConfig.ReportDescriptor       = descCopy;
+                vhfConfig.VhfClientContext       = Dev;
                 vhfConfig.EvtVhfReadyForNextReadReport = SecTsVhfReadyForNextReadReport;
+                vhfConfig.VendorID               = 0x04E8;
+                vhfConfig.ProductID              = 0x79A0;
+                vhfConfig.VersionNumber          = 0x0100;
                 status = VhfCreate(&vhfConfig, &Dev->VhfHandle);
                 SecTsTrace("VhfCreate (non-paged desc) status=%x", status);
                 if (!NT_SUCCESS(status)) {
